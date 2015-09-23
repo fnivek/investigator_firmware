@@ -13,17 +13,18 @@ uint16_t after;
 int sonarcount;
 int main(void) {
     WDTCTL = WDTPW | WDTHOLD;	// Stop watchdog timer
-    P1DIR = 0x01;    //Set Port 1 Pin 0 as an output
+    P1DIR = 0x05;    //Set Port 1 Pin 0  & 2 as an output
     TACTL = 0x220; //Set Timercounter A To run in continuous mode
     P1IE = 0x02; // Enable interrupt Port1Pin1
     P1IES = 0x02; //P1.1 triggers an interrupt on a high to low transition
     __enable_interrupt();// sets global ifg
-
+    P1OUT = 0x00; //Reset and don't send a trigger
+    __delay_cycles(20); //Wait for the reset to kick in
 	while(1)
 	{
-		P1OUT = 0x01;
-		__delay_cycles(500);
-		P1OUT &= 0x00;
+		P1OUT = 0x05;		//Set reset high and start the trigger
+		__delay_cycles(1000);
+		P1OUT &= 0x04;
 		before = TA0R;
 		__delay_cycles(1000000);
 	}
