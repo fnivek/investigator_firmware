@@ -14,5 +14,6 @@
 #include <stdint.h>
 
 void InitSonarArray();
+void SonarTick();
 
 #endif /* SONAR_ARRAY_H_ */
