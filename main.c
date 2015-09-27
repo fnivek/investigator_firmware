@@ -1,51 +1,23 @@
 #include <msp430.h> 
 #include <stdio.h>
-#include<msp430g2553.h>
-#include<stdint.h>
+#include <msp430g2553.h>
+#include <stdint.h>
+
+#include "sonar_array.h"
 /*
  * main.c
- * Interfaces with the Sonar sensor and a timer counter using pin interrupts
  */
-const uint8_t kNumSonars = 4;
-const float kInchPerClk = 0.00675;
-
-uint16_t distcycles;
-float distin[kNumSonars];
-uint8_t current_sonar = 0;
-uint16_t before;
-uint16_t after;
-int sonarcount;
 
 int main(void) {
     WDTCTL = WDTPW | WDTHOLD;		// Stop watchdog timer
-    P1DIR = 0x05;    				// Set Port 1 Pin 0  & 2 as an output
-    TACTL = 0x220; 					// Set Timercounter A To run in continuous mode
-    P1IE = 0x02; 					// Enable interrupt Port1Pin1
-    P1IES = 0x02; 					// P1.1 triggers an interrupt on a high to low transition
+
+    InitSonarArray();
+
     __enable_interrupt();			// Sets global ifg
-    P1OUT = 0x00; 					// Reset and don't send a trigger
-    __delay_cycles(20); 			// Wait for the reset to kick in
 	while(1)
 	{
-		P1OUT = 0x05;				// Set reset high and start the trigger
-		__delay_cycles(1000);
-		P1OUT &= 0x04;
-		before = TA0R;
-		__delay_cycles(1000000);
+		SonarTick();
 	}
 	return 0;
-}
-#pragma vector=PORT1_VECTOR
-__interrupt void Port_1(void)
-{
-
-	after = TA0R;						// Set the TA0R to a variable to make subtraction work
-	distcycles = after-before;			// Find width of the pulse
-	distin[current_sonar] = distcycles * kInchPerClk;  // uS/148 = inches
-	++current_sonar;
-	if (current_sonar >= kNumSonars) {
-		current_sonar = 0;
-	}
-	P1IFG = 0x00;						// Clear the interrupt flag
 }
 
