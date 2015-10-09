@@ -31,7 +31,7 @@ int sonarcount;
 // Pin 2 Reset
 void InitSonarArray() {
 	P1DIR = 0x05;    				// Set Port 1 Pin 0  & 2 as an output
-	TACTL = 0x220; 					// Set Timercounter A To run in continuous mode
+	TA0CTL = 0x02E0; 					// Set Timercounter A To run in continuous mode
 	P1IE = 0x02; 					// Enable interrupt Port1Pin1
 	P1IES = 0x02; 					// P1.1 triggers an interrupt on a high to low transition
 

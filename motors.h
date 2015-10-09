@@ -15,5 +15,6 @@
 
 void InitMotors();
 void MotorTick();
+void Set_PWM(float pwm, uint8_t bit);
 
 #endif /* MOTORS_H_ */
