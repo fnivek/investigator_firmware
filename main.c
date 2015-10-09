@@ -5,6 +5,7 @@
 
 #include "sonar_array.h"
 #include "motors.h"
+#include "comms.h"
 
 /*
  * main.c
@@ -12,26 +13,25 @@
 
 int main(void) {
     WDTCTL = WDTPW | WDTHOLD;		// Stop watchdog timer
-    DCOCTL |= 7<<DCO0;
-    BCSCTL1 |= 0x0F<<RSEL0 ;
-    InitSonarArray();
-    InitMotors();
-    float counter = 0.1;
-    __enable_interrupt();			// Sets global ifg
-	while(1)
-	{
 
-	Set_PWM(counter,2);
-	Set_PWM(counter,3); //run both "motors" at half speed
-	__delay_cycles(9000000);
-	if(counter<0.99)
+    // Set up master clk
+    DCOCTL |= DCO2 | DCO1 | DCO0;
+    BCSCTL1 |= RSEL3 | RSEL2 | RSEL1 | RSEL0;
+
+    // Init systems
+    //InitSonarArray();
+    //InitMotors();
+    InitComms();
+
+    __enable_interrupt();			// Sets global ifg
+	uint8_t test = 0;
+
+    while(1)
 	{
-		counter = counter +0.01;
-	}
-	else
-	{
-		counter = 0.1;
-	}
+		//SonarTick();
+		//MotorTick();
+		TestComms(test);
+		++test;
 	}
 	return 0;
 }
