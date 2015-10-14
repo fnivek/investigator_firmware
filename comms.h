@@ -13,6 +13,6 @@
 
 void InitComms(void);
 
-void TestComms(uint8_t thing);
+uint8_t TestComms(uint8_t thing);
 
 #endif /* COMMS_H_ */

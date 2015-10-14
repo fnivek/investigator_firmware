@@ -30,8 +30,9 @@ int main(void) {
 	{
 		//SonarTick();
 		//MotorTick();
-		TestComms(test);
-		++test;
+		if (TestComms(test)) {
+			++ test;
+		}
 	}
 	return 0;
 }
