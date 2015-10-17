@@ -5,33 +5,23 @@
 
 #include "sonar_array.h"
 #include "motors.h"
-
+#include "encoder.h"
 /*
  * main.c
  */
-
+//Kevin claims pins 1.1,1.2,1.4,1.5 for SPI
 int main(void) {
     WDTCTL = WDTPW | WDTHOLD;		// Stop watchdog timer
     DCOCTL |= 7<<DCO0;
     BCSCTL1 |= 0x0F<<RSEL0 ;
-    InitSonarArray();
-    InitMotors();
-    float counter = 0.1;
+   // InitSonarArray();
+   // InitMotors();
+    Init_Encoder();
     __enable_interrupt();			// Sets global ifg
+    P1DIR = 0x01;
 	while(1)
 	{
-
-	Set_PWM(counter,2);
-	Set_PWM(counter,3); //run both "motors" at half speed
-	__delay_cycles(9000000);
-	if(counter<0.99)
-	{
-		counter = counter +0.01;
-	}
-	else
-	{
-		counter = 0.1;
-	}
+		P1OUT ^=0x01; //Used to find clock freq
 	}
 	return 0;
 }

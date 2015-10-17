@@ -2,7 +2,8 @@
  * sonar_array.c
  *
  *  Created on: Sep 27, 2015
- *      Author: Kevin French
+ *      Authors: Kevin French
+ *      		 Daniel Jensen
  */
 
 // TODO:
