@@ -17,7 +17,7 @@
 
 // Global variables
 const uint8_t kNumSonars = 4;
-const float kInchPerClk = 0.00675;
+const float kInchPerClk = 0.0016875;
 
 uint16_t distcycles;
 float distin[kNumSonars];
@@ -25,29 +25,48 @@ uint8_t current_sonar = 0;
 uint16_t before;
 uint16_t after;
 int sonarcount;
+uint8_t starttrig = 1;
+uint8_t waiting = 0;
+uint16_t toggletime = 0;
 
-// Initilizes the sonar array on Port 1 pin 0-2
+// Initilizes the sonar array on Port 1 pin 0,3,6
 // Pin 0 Trigger
-// Pin 1 Echo
-// Pin 2 Reset
+// Pin 3 Echo
+// Pin 6 Reset
 void InitSonarArray() {
-	P1DIR = 0x05;    				// Set Port 1 Pin 0  & 2 as an output
-	TA0CTL = 0x02E0; 					// Set Timercounter A To run in continuous mode
-	P1IE = 0x02; 					// Enable interrupt Port1Pin1
-	P1IES = 0x02; 					// P1.1 triggers an interrupt on a high to low transition
+	P1DIR |= 0x41;    				// Set Port 1 Pin 0 & 6 as an output
+	P1DIR &= 0xF7;					// Set P1.3 as an input
+	TA0CTL = 0x02E0; 				// Set Timercounter A To run in continuous mode
+	P1IE = 0x08; 					// Enable interrupt Port1Pin3 for the echo
+	P1IES = 0x08; 					// P1.3 triggers an interrupt on a high to low transition
 
-	P1OUT &= 0xFB; 					// Reset counter
+	P1OUT &= 0xBF; 					// Reset counter
 	__delay_cycles(20); 			// Wait for the reset to kick in
-	P1OUT |= 0x04;					// Set reset False (High)
+	P1OUT |= 0x40;					// Set reset False (High)
 }
 
 // Updates the sonar state
 void SonarTick() {
-
+/*
 	__delay_cycles(1000);
 	P1OUT &= 0xFE;
 	before = TA0R;
 	__delay_cycles(1000000);
+	*/
+	if(starttrig == 1 && waiting == 0)
+	{
+		P1OUT |= 0x01; //set the trigger high
+		waiting = 1;
+		toggletime = TA0R + 20000;
+	}
+	if( (starttrig == 1) && (waiting == 1) && (toggletime - TA0R > 0) &&(toggletime - TA0R < 5000))
+	{
+		P1OUT &= 0xFE; //set the trigger low
+		starttrig = 0; //reset the trigger flag
+		before = TA0R;
+		waiting = 0;   //indicates we are not waiting with the trigger high
+	}
+
 }
 
 
@@ -64,4 +83,6 @@ __interrupt void Port_1(void)
 		current_sonar = 0;
 	}
 	P1IFG = 0x00;						// Clear the interrupt flag
+	starttrig = 1; 						//Set the flag for the trigger
+
 }

@@ -18,11 +18,14 @@ void InitComms(void) {
 	// Set up pin functions and Directions
 	P1SEL |= 0x36;
 	P1SEL2 |= 0x36;
-	P1DIR &= ~0x34;			// P1.2, P1.4, P1.5 In
-	P1DIR |= 0x2;			// P1.1 Out
+	P1DIR |= 0x14;			// P1.2, P1.4, P1.5 In
+	P1DIR &= ~0x2;			// P1.1 Out
 
 	// Set slave mode active low cs
-	UCA0CTL0 = UCMSB | UCSYNC | UCMODE_2 | UCCKPH;
+	UCA0CTL0 = UCMSB | UCSYNC | UCMODE_2 | UCCKPH | UCMST;
+	UCA0CTL1 = UCSSEL_3 | UCSWRST;
+	UCA0BR0 = 0x00;
+	UCA0BR1 = 0x00;
 
 	// Enable interrupts
 	// IE2 |= ...

@@ -7,6 +7,9 @@
 #include "motors.h"
 #include "encoder.h"
 #include "comms.h"
+//extern const uint8_t kNumSonars = 4;
+
+extern float distin[];
 
 /*
  * main.c
@@ -20,20 +23,20 @@ int main(void) {
     BCSCTL1 |= RSEL3 | RSEL2 | RSEL1 | RSEL0;
 
     // Init systems
-    //InitSonarArray();
-    //InitMotors();
+    InitSonarArray();
+    InitMotors();
     //InitComms();
-    //Init_Encoder();
+    Init_Encoder();
 
     __enable_interrupt();			// Sets global ifg
 
-    P1DIR = 0x01;
+   // P1DIR = 0x01;
 
     while(1)
 	{
-		//SonarTick();
-		//MotorTick();
-    	P1OUT ^=0x01; //Used to find clock freq
+    	__delay_cycles(100);
+    	SonarTick();
+    	Set_PWM(distin[1]/80,0);
 	}
 	return 0;
 }
