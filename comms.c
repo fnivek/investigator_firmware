@@ -7,6 +7,9 @@
 
 
 #include "comms.h"
+#include "queue.h"
+
+queue TXBuf;
 
 // Sets up SPI for communication with both the IMU and ODROID
 // SPI P1.1 MISO, P1.2 MOSI, P1.4 CLK, P1.5 UCA0STE
@@ -28,7 +31,7 @@ void InitComms(void) {
 	UCA0BR1 = 0x00;
 
 	// Enable interrupts
-	// IE2 |= ...
+	IE2 |= UCA0RXIE | UCA0TXBUF;
 
 	// Turn on USCI in SPI mode
 	UCA0CTL1 &= ~UCSWRST;
