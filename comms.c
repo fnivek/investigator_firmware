@@ -25,16 +25,56 @@ void InitComms(void) {
 	P1DIR &= ~0x2;			// P1.1 Out
 
 	// Set slave mode active low cs
-	UCA0CTL0 = UCMSB | UCSYNC | UCMODE_2 | UCCKPH | UCMST;
+	UCA0CTL0 = UCMSB | UCSYNC | UCMODE_2;
 	UCA0CTL1 = UCSSEL_3 | UCSWRST;
 	UCA0BR0 = 0x00;
 	UCA0BR1 = 0x00;
 
 	// Enable interrupts
-	IE2 |= UCA0RXIE | UCA0TXBUF;
+	//IE2 |= UCA0RXIE | UCA0TXBUF;
 
 	// Turn on USCI in SPI mode
 	UCA0CTL1 &= ~UCSWRST;
+}
+
+// Transfer one byte over SPI
+void Transmit(uint8_t out) {
+	if (!QueueInsert(&TXBuf, out)) {
+		// Handle Queue overflow
+		__disable_interrupt();
+		for (;;); // This is here to intentionally break the code
+	}
+
+	// Turn the transmit interrupt back on
+	if(QueueSize(&TXBuf) == 1) {
+		IE2 |= UCA0TXIE;
+	}
+}
+
+// Transmit interrupt
+// While TXBuf has data transmit
+// When there is no data left in TXBuf turn off the interupt enable
+#pragma vector=USCIAB0TX_VECTOR
+__interrupt void TXISR() {
+
+	// UART
+	uint8_t out = 0;
+	if(QueuePop(&TXBuf, &out)) {
+		UCA0TXBUF = out;
+	}
+	else {
+		// Done transfering disable transmit interrupt
+		IE2 &= ~UCA0TXIE;
+	}
+}
+
+// Recieve Interrupt
+#pragma vector=USCIAB0RX_VECTOR
+__interrupt void RXISR() {
+	// Echo
+	uint8_t value = UCA0RXBUF;
+	Transmit(value);
+	Set_PWM(value / 256.0, 0);
 }
 
 // Function to test comms

@@ -25,10 +25,11 @@ int main(void) {
     // Init systems
     InitSonarArray();
     InitMotors();
-    //InitComms();
+    InitComms();
     Init_Encoder();
 
     __enable_interrupt();			// Sets global ifg
+    IE2 |= UCA0RXIE | UCA0TXBUF;
 
    // P1DIR = 0x01;
 
@@ -36,7 +37,8 @@ int main(void) {
 	{
     	__delay_cycles(100);
     	SonarTick();
-    	Set_PWM(distin[1]/80,0);
+    	//Set_PWM(distin[1]/80,0);
+    	//TestComms(0x55);
 	}
 	return 0;
 }

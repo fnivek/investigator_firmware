@@ -10,9 +10,11 @@
 
 #include <msp430g2553.h>
 #include <stdint.h>
+#include "motors.h"
 
 void InitComms(void);
 
 uint8_t TestComms(uint8_t thing);
+void Transmit(uint8_t out);
 
 #endif /* COMMS_H_ */
