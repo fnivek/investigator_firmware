@@ -15,7 +15,6 @@ uint16_t compare2old = 0;
 uint16_t diff1 = 0;//This is the number of clock ticks that have occured in 1/898 of a revolution
 uint16_t diff2 = 0;
 uint16_t timer1intcode;
-uint16_t a_diff2[120];
 
 //P2.1 is the left encoder signal
 //P2.4 is the right encoder signal
@@ -66,13 +65,6 @@ __interrupt void ENCODER2(void)
 		}
 
 		diff2 = TA1CCR2 - compare2old; //This difference will be used for speed computation
-
-		if(encodercount2 < 121 && encodercount2 > 0)
-		{
-
-			//ccr1[encodercount2] = timer1value;
-			a_diff2[encodercount2] = diff2;
-		}
 
 		compare2old = TA1CCR2;
 	}

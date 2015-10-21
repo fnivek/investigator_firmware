@@ -7,8 +7,9 @@
 
 
 #include "comms.h"
-#include "queue.h"
 
+// Global vars
+queue RXBuf;
 queue TXBuf;
 
 // Sets up SPI for communication with both the IMU and ODROID
@@ -71,10 +72,9 @@ __interrupt void TXISR() {
 // Recieve Interrupt
 #pragma vector=USCIAB0RX_VECTOR
 __interrupt void RXISR() {
-	// Echo
-	uint8_t value = UCA0RXBUF;
-	Transmit(value);
-	Set_PWM(value / 256.0, 0);
+	if (!QueueInsert(&RXBuf, UCA0RXBUF)) {
+		// TODO: Handle RXBuf overflow
+	}
 }
 
 // Function to test comms

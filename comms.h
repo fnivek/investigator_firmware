@@ -11,6 +11,7 @@
 #include <msp430g2553.h>
 #include <stdint.h>
 #include "motors.h"
+#include "queue.h"
 
 void InitComms(void);
 
