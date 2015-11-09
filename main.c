@@ -9,7 +9,7 @@
 #include "comms.h"
 //extern const uint8_t kNumSonars = 4;
 
-extern float distin[];
+extern uint16_t distin[];
 
 /*
  * main.c

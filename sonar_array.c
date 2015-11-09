@@ -19,12 +19,9 @@
 const uint8_t kNumSonars = 4;
 const float kInchPerClk = 0.0016875;
 
-uint16_t distcycles;
-float distin[kNumSonars];
+uint16_t distin[kNumSonars];
 uint8_t current_sonar = 0;
 uint16_t before;
-uint16_t after;
-int sonarcount;
 uint8_t starttrig = 1;
 uint8_t waiting = 0;
 uint16_t toggletime = 0;
@@ -75,14 +72,15 @@ void SonarTick() {
 __interrupt void Port_1(void)
 {
 
-	after = TA0R;						// Set the TA0R to a variable to make subtraction work
-	distcycles = after-before;			// Find width of the pulse
-	distin[current_sonar] = distcycles * kInchPerClk;  // uS/148 = inches
-	++current_sonar;
+	uint16_t after = TA0R;						// Set the TA0R to a variable to make subtraction work
+	distin[current_sonar] = after - before;		// Get number of clocks
+
+	++current_sonar;							// Increment sonars
 	if (current_sonar >= kNumSonars) {
 		current_sonar = 0;
 	}
-	P1IFG = 0x00;						// Clear the interrupt flag
-	starttrig = 1; 						//Set the flag for the trigger
+
+	P1IFG = 0x00;								// Clear the interrupt flag
+	starttrig = 1; 								//Set the flag for the trigger
 
 }
