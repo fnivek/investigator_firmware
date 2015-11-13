@@ -10,6 +10,7 @@
 
 // Global vars
 queue TXBuf;
+ringbuf RXBuf;
 uint8_t motor_dir = 0;
 uint32_t motor_speed = 0;
 
@@ -106,7 +107,7 @@ __interrupt void TXISR() {
 __interrupt void RXISR() {
 	// Grab value
 	uint8_t value = UCA0RXBUF;
-	//RingbufPush(&RXBuf, value);
+	RingbufPush(&RXBuf, value);
 	//Transmit(value);
 
 	// Check if this is a new read or write by seeing if we are waiting
@@ -220,21 +221,21 @@ __interrupt void RXISR() {
 			}
 			else if(num_bytes_in < 9 && num_bytes_in >= 5) {
 				uint8_t shift = 8 * (8 - num_bytes_in);
-				uint32_t temp = *(uint32_t *)(&value);			// Reinterpret_cast
+				uint32_t temp = value;
 				motor_speed |= temp << shift;
 				if(num_bytes_in == 5) {
-					float test = *(float *)(motor_speed);		// Reinterpret_cast
+					float test = *(float *)(&motor_speed);		// Reinterpret_cast
 					Set_PWM(test, (motor_dir & 0x1) << 1);
 					motor_speed = 0;
 				}
 			}
 			else if(num_bytes_in < 5) {
-				uint8_t shift = 8 * (8 - num_bytes_in);
-				uint32_t temp = *(uint32_t *)(&value);			// Reinterpret_cast
+				uint8_t shift = 8 * (4 - num_bytes_in);
+				uint32_t temp = value;
 				motor_speed |= temp << shift;
 				if(num_bytes_in == 1) {
-					float test = *(float *)(motor_speed);		// Reinterpret_cast
-					Set_PWM(test, (motor_dir & 0x2) | 0x1);
+					float pwm = *(float *)(&motor_speed);		// Reinterpret_cast
+					Set_PWM(pwm, (motor_dir & 0x2) | 0x1);
 				}
 			}
 			num_bytes_in--;

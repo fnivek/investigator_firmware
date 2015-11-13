@@ -13,6 +13,7 @@
 #include "motors.h"
 #include "sonar_array.h"
 #include "queue.h"
+#include "ringbuf.h"
 
 void InitComms(void);
 
