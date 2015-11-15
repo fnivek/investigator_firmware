@@ -31,12 +31,11 @@ int main(void) {
     __enable_interrupt();			// Sets global ifg
     IE2 |= UCA0RXIE | UCA0TXBUF;
 
-   // P1DIR = 0x01;
-
     while(1)
 	{
-    	__delay_cycles(100);
-    	SonarTick();
+    	__delay_cycles(10000000);
+    	//SonarTick();
+    	Test_Motors();
     	//Set_PWM(distin[1]/80,0);
     	//TestComms(0x55);
 	}
