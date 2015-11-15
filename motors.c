@@ -7,172 +7,135 @@
  */
 
 #include "motors.h"
-
-// array of motors
-motor motors[] = {
-		{BIT0, BIT5, 0, 0, 0, TA0IV_TACCR1, &TA0CCR1, &TA0CCTL1},
-		{BIT2, BIT3, 0, 0, 0, TA0IV_TACCR2, &TA0CCR2, &TA0CCTL2}};
-
-
-// Framing
 #define FRAMELENGTH 1000
-#define MIN_NUM_CLKS 50
+
+// Globals
+float g_pwml;//These two variables should be written to
+float g_pwmr;
+float pwml_active;
+float pwmr_active;
+uint8_t g_ldir; //global variable for left direction
+uint8_t g_rdir;
+uint16_t timervalue;
+uint16_t timerintcode;
+uint8_t motorsel; //part of the flag variable in SET_PWM controls which motor is being referenced
+uint8_t motordir; //part of flag variable in SET_PWM 1 is forward, 0 is reverse
+
 
 // Initilize the motors on port 2 pins 2.0, 2.2, 2.3, 2.5
 //									leftIN1,rightIN1,rightIN2,leftIN2
 void InitMotors() {
-	// Set 2.0,2.2,2.3,& 2.5 as outputs
-	uint8_t i;
-	for(i = NUM_MOTORS; i != 0; --i) {
-		motor* m = &motors[i - 1];
-		(*m->cctl_address) = SCS;	// No capture,synchronouscap(unnecesary),comparemode OUTput the outputbit,enable int,
-		P2DIR |= m->in1;
-		P2DIR |= m->in2;
-	}
-	//TACTL = 0x0220; 			// Continuous,divide by 1, no OVF (*IN INIT SONAR*)
+	P2DIR |= 0x2D; // Set 2.0,2.2,2.3,& 2.5 as outputs
+	//TACTL = 0x0220; //Continuous,divide by 1, no OVF (*IN INIT SONAR*)
+	TA0CCTL0 = 0x0810;
+	TA0CCTL1 = 0x0810;	//No capture,synchronouscap(unnecesary),comparemode
+	TA0CCTL2 = 0x0810;	//OUTput the outputbit,enable int,
 
-	// Debug
-	P2DIR |= 0x80;
-	// End debug
 
-	TA0CCTL0 = SCS | CCIE; 		//0x0810;
 }
 
 void MotorTick() {
 	// Place holder
 }
 
-// This interrupt is the framing interrupt, set at the PWM frequency
-// Depending on desired direction we set the pwm pin high and the enable pin low
+
 #pragma vector=TIMER0_A0_VECTOR
 __interrupt void PWMFRAMETICK(void)
 {
-	// Loop through motors
-	uint8_t i;
-	for(i = NUM_MOTORS; i != 0; --i) {
-		motor* m = &motors[i - 1];
+	//This interrupt is the framing interrupt, set at the PWM frequency
+	//Depending on desired direction we set the pwm pin high and the enable pin low
 
-		// Move in the new pwm and dir values in
-		m->pwm = m->next_pwm;
-		m->dir &= 0xFE;
-		m->dir |= (m->dir & DIRECTION_BM) >> 1;
+	pwml_active = g_pwml; //Sample the global pwm values at the new "frame"
+	pwmr_active = g_pwmr;
+	ldir_active = g_ldir;
+	rdir_active = g_rdir;
+	timervalue = TAR;
 
-		// Check if zero
-		if(m->pwm <= MIN_NUM_CLKS) {
-			P2OUT &= ~(m->in1 | m->in2);
-			continue;
-		}
-
-		// Set the pwm pins
-		if(m->dir & 0x1) {
-			P2OUT |= m->in1;
-			P2OUT &= ~m->in2;
-		}
-		else {
-			P2OUT |= m->in2;
-			P2OUT &= ~m->in1;
-		}
-
-		// Check edge cases
-		if(m->pwm == FRAMELENGTH) {
-			continue;
-		}
-
-		// Set the next capture compare value
-		(*m->ccr_address) = TA0R + m->pwm;
-
-		// Enable the interrupt
-		//(*m->cctl_address) &= 0xFE;
-		(*m->cctl_address) |= CCIE;
-
-		// Trigger a manual interrupt if we enabled the interrupt to late
-		// Since there is unsigned wrap around special considerations must be taken
-		/* for edge cases
-		if(TA0R < TA0CCR0) {
-			// Wrap around detected
-			if(TA0R  < (*m->ccr_address)) {
-				// Interrupt was missed
-				P2OUT &= ~(m->in1 | m->in2);
-				(*m->cctl_address) &= ~CCIE;
-			}
-		}
-		else {
-			// No wrap around
-			if (TA0R > (*m->ccr_address)) {
-				// Interrupt was missed
-				P2OUT &= ~(m->in1 | m->in2);
-				(*m->cctl_address) &= ~CCIE;
-			}
-		}*/
+	if(pwml_active != 0 && ldir_active == 1)
+	{
+		P2OUT |= 0x01; //PWML IN1 is P2.0 - (We apply PWM to it)
+		P2OUT &= 0xDF; //PWML IN2 is P2.5 -(We set it low in forward mode)
+		TA0CCR1 = timervalue + pwml_active*FRAMELENGTH;  //prepare for an interrupt pwml_active*1000 cycles in the future
 	}
+	else if(pwml_active != 0 && ldir_active == 0)
+	{
+		P2OUT |= 0x20; //PWML IN2 is P2.5 - (We apply PWM to it in reverse mode)
+		P2OUT &= 0xFE; //PWML IN1 is P2.0 -(We set it low in reverse mode)
+		TA0CCR1 = timervalue + pwml_active*FRAMELENGTH;  //prepare for an interrupt pwml_active*1000 cycles in the future
+	}
+	if(pwmr_active != 0 && rdir_active == 1)
+	{
+		P2OUT |= 0x04; //PWMR IN1 is P 2.2
+		P2OUT &= 0xF7; //PWMR IN2 is P2.3 (low in forward mode)
+		TA0CCR2 = timervalue + pwmr_active*FRAMELENGTH; //prepare for an interrupt pwmr_active*1000 cycles in the future
+	}
+	if(pwmr_active != 0 && rdir_active == 0)
+		{
+		P2OUT |= 0x08; //PWMR IN2 is P2.3 (gets PWM in reverse mode)
+		P2OUT &= 0xFB; //PWR  IN1 is P2.2 (set low in reverse)
+		TA0CCR2 = timervalue + pwmr_active*FRAMELENGTH; //prepare for an interrupt pwmr_active*1000 cycles in the future
+		}
 
-	// Set next interrupt time
-	TA0CCR0 += FRAMELENGTH;
-
-	// Ensure interrupt enable didn't get reset
-	TA0CCTL0 |= CCIE;
-
+	TA0CCR0 = timervalue + FRAMELENGTH; //sets the frame to have 1000 cycle length
+	TA0CCTL0 = 0x0810;
 	//TA0CTL &= 0xFFFE;
 }
 
 #pragma vector=TIMER0_A1_VECTOR
 __interrupt void PWMCC(void)
 {
-	// This interrupt is where we switch off the PWM signal
-	// Loop through motors
-	uint8_t i;
-	for(i = NUM_MOTORS; i != 0; --i) {
-		motor* m = &motors[i - 1];
-		if((m->int_code & TA0IV) == 0) {
-			continue;
-		}
-
-		// Ground both pins and disable intterupts
-		P2OUT &= ~(m->in1 | m->in2);
-		(*m->cctl_address) &= ~CCIE;
+	//This interrupt is where we switch off the PWM signal
+	timerintcode = TA0IV;
+	if((timerintcode & 0x02) == 0x02 && ldir_active == 1)//TACCR1 controls the "left"
+	{
+		P2OUT &= 0xFE;//Left forward means PWM is bit 2.0 which we switch off here
+	}
+	if((timerintcode & 0x02) == 0x02 && ldir_active == 0)
+	{
+		P2OUT &= 0xDF;   //Left reverse means PWM is IN2 which was mapped to 2.1
+	}
+	if((timerintcode & 0x04) == 0x04 && rdir_active == 1)//TACCR2 controls the "right"
+	{
+		P2OUT &= 0xFB;//Right forward -> switch off IN1 -> P2.2
+	}
+	if((timerintcode & 0x04) == 0x04 && rdir_active == 0)
+	{
+		P2OUT &= 0xF7;  //Right reverse -> switch of IN2 -> P2.3
 	}
 }
-
 void Set_PWM(float pwm, uint8_t flag )
 {
-	if(pwm > 1.0 | pwm < 0.0)
-		return;
-
-	// LSB of flag determines which motor
+	//LSB of flag determines which motor
 	// Bit 1 of flag will control direction
-	motor* m = &motors[flag & MOTOR_BM];
-	m->next_pwm = pwm * FRAMELENGTH;
-	m->dir &= ~DIRECTION_BM;
-	m->dir |= (flag & DIRECTION_BM);
+	 motorsel = flag & 0x01;
+	 motordir = (flag & 0x02)>>1;
+	if(pwm >= 0 && pwm<= 1.0 && motorsel==0)
+	{
+		g_pwml = pwm;
+		g_ldir = motordir;
+	}
+	else if(pwm >= 0 && pwm<= 1.0 && motorsel!=0)
+	{
+		g_pwmr = pwm;
+		g_rdir = motordir;
+	}
 }
-
 void Test_Motors(void)
 {
-	float step = 0.001;
-	float pwm = 0.5;
-	uint8_t dir = DIRECTION_BM;
+	//put this code in a while(1) loop to ramp up motor speed slowly for test purposes
+	float counter = 0.1;
+	Set_PWM(counter,2);
+		Set_PWM(counter,3); //run both "motors" forward direction
+		__delay_cycles(9000000);
+		if(counter<0.99)
+		{
+			counter = counter +0.01;
 
-	while(1) {
-		// Set motors
-		Set_PWM(pwm, dir | LEFT_MOTOR);
-		Set_PWM(pwm, dir | RIGHT_MOTOR);
-
-		// Step
-		pwm += step;
-		if(pwm > 1.0) {
-			step *= -1;
-			pwm = 1.0;
 		}
-		else if(pwm < 0.0) {
-			// Change dir
-			dir ^= DIRECTION_BM;
-			step *= -1;
-			pwm = 0.0;
+		else
+		{
+			return;
 		}
-
-		// Wait
-		__delay_cycles(900000);
-	}
 }
 
 

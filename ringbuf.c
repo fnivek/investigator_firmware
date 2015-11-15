@@ -1,6 +1,6 @@
 #include "ringbuf.h"
 
-void RingbufPushUint8(uint8_ringbuf* buf, uint8_t data) {
+void RingbufPush(ringbuf* buf, uint8_t data) {
 	buf->data[buf->position] = data;
 	++buf->position;
 	if(buf->position >= RINGBUF_SIZE) {
@@ -8,7 +8,7 @@ void RingbufPushUint8(uint8_ringbuf* buf, uint8_t data) {
 	}
 }
 
-void RingbufPopUint8(uint8_ringbuf* buf, uint8_t* data) {
+void RingbufPop(ringbuf* buf, uint8_t* data){
 	--buf->position;
 	if(buf->position >= RINGBUF_SIZE) {
 		buf->position = RINGBUF_SIZE - 1;
@@ -16,18 +16,3 @@ void RingbufPopUint8(uint8_ringbuf* buf, uint8_t* data) {
 	(*data) = buf->data[buf->position];
 }
 
-void RingbufPushFloat(float_ringbuf* buf, float data) {
-	buf->data[buf->position] = data;
-	++buf->position;
-	if(buf->position >= RINGBUF_SIZE) {
-		buf->position = 0;
-	}
-}
-
-void RingbufPopFloat(float_ringbuf* buf, float* data) {
-	--buf->position;
-	if(buf->position >= RINGBUF_SIZE) {
-		buf->position = RINGBUF_SIZE - 1;
-	}
-	(*data) = buf->data[buf->position];
-}

@@ -10,6 +10,7 @@
 
 // Global vars
 queue TXBuf;
+ringbuf RXBuf;
 uint8_t motor_dir = 0;
 uint32_t motor_speed = 0;
 
@@ -20,6 +21,8 @@ extern uint16_t diff1;
 extern uint16_t diff2;
 extern uint32_t encodercount1;
 extern uint32_t encodercount2;
+extern uint8_t g_ldir;
+extern uint8_t g_rdir;
 
 // Number of bytes to recieve on a write cycle
 uint8_t num_bytes_in = 0;
@@ -104,6 +107,7 @@ __interrupt void TXISR() {
 __interrupt void RXISR() {
 	// Grab value
 	uint8_t value = UCA0RXBUF;
+	RingbufPush(&RXBuf, value);
 	//Transmit(value);
 
 	// Check if this is a new read or write by seeing if we are waiting
@@ -135,7 +139,7 @@ __interrupt void RXISR() {
 			break;
 		case ENCODERS_SPEED:
 			// Direction
-			if (!QueueInsert(&TXBuf, 1 | (1 << 1))) {
+			if (!QueueInsert(&TXBuf, g_ldir | (g_rdir << 1))) {
 				// TODO: Handle TXBuf overflow
 			}
 
@@ -220,8 +224,8 @@ __interrupt void RXISR() {
 				uint32_t temp = value;
 				motor_speed |= temp << shift;
 				if(num_bytes_in == 5) {
-					float pwm = *(float *)(&motor_speed);		// Reinterpret_cast
-					Set_PWM(pwm, LEFT_MOTOR | (motor_dir & 0x1) << 1);
+					float test = *(float *)(&motor_speed);		// Reinterpret_cast
+					Set_PWM(test, (motor_dir & 0x1) << 1);
 					motor_speed = 0;
 				}
 			}
@@ -231,7 +235,7 @@ __interrupt void RXISR() {
 				motor_speed |= temp << shift;
 				if(num_bytes_in == 1) {
 					float pwm = *(float *)(&motor_speed);		// Reinterpret_cast
-					Set_PWM(pwm, RIGHT_MOTOR | motor_dir & 0x2);
+					Set_PWM(pwm, (motor_dir & 0x2) | 0x1);
 				}
 			}
 			num_bytes_in--;

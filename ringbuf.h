@@ -12,20 +12,12 @@
 
 #define RINGBUF_SIZE 25
 
-typedef struct uint8_ringbuf {
+typedef struct ringbuf {
 	uint8_t position;
 	uint8_t data[RINGBUF_SIZE];
-} uint8_ringbuf;
+} ringbuf;
 
-void RingbufPushUint8(uint8_ringbuf* buf, uint8_t data);
-void RingbufPopUint8(uint8_ringbuf* buf, uint8_t* data);
-
-typedef struct float_ringbuf {
-	uint8_t position;
-	float data[RINGBUF_SIZE];
-} float_ringbuf;
-
-void RingbufPushFloat(float_ringbuf* buf, float data);
-void RingbufPopFloat(float_ringbuf* buf, float* data);
+void RingbufPush(ringbuf* buf, uint8_t data);
+void RingbufPop(ringbuf* buf, uint8_t* data);
 
 #endif /* RINGBUF_H_ */
