@@ -26,7 +26,6 @@ uint8_t motordir; //part of flag variable in SET_PWM 1 is forward, 0 is reverse
 //									leftIN1,rightIN1,rightIN2,leftIN2
 void InitMotors() {
 	P2DIR |= 0x2D; // Set 2.0,2.2,2.3,& 2.5 as outputs
-	//TACTL = 0x0220; //Continuous,divide by 1, no OVF (*IN INIT SONAR*)
 	TA0CCTL0 = 0x0810;
 	TA0CCTL1 = 0x0810;	//No capture,synchronouscap(unnecesary),comparemode
 	TA0CCTL2 = 0x0810;	//OUTput the outputbit,enable int,
@@ -53,57 +52,62 @@ __interrupt void PWMFRAMETICK(void)
 	ldir_active = g_dir_l;
 	rdir_active = g_dir_r;
 
+	// Left
 	if(pulse_width_l_active < MIN_PULSE_WIDTH) //pick a cutoff speed to set to zero
 	{
 		P2OUT &= 0xFE; // PWML IN1 is P2.0 - just set it low
 		P2OUT &= 0xDF; // Set PWML IN2 low for "forward"
-		return; //don't bother checking the other cases
-	}
-	else if(pulse_width_l_active > MAX_PULSE_WIDTH)
-	{
-		TA0CCTL1 &= ~CCIE;
 	}
 	else
 	{
-		TA0CCTL1 |= CCIE;
+		if(pulse_width_l_active > MAX_PULSE_WIDTH)
+		{
+			TA0CCTL1 &= ~CCIE;
+		}
+		else
+		{
+			TA0CCTL1 |= CCIE;
+		}
+
+		if(ldir_active == 1)
+		{
+			P2OUT |= 0x01; //PWML IN1 is P2.0 - (We apply PWM to it)
+			P2OUT &= 0xDF; //PWML IN2 is P2.5 -(We set it low in forward mode)
+		}
+		else
+		{
+			P2OUT |= 0x20; //PWML IN2 is P2.5 - (We apply PWM to it in reverse mode)
+			P2OUT &= 0xFE; //PWML IN1 is P2.0 -(We set it low in reverse mode)
+		}
 	}
+
+	// Right
 	if(pulse_width_r_active < MIN_PULSE_WIDTH)
 	{
 		P2OUT &= 0xFB; //PMWR IN1 is P2.2 - just set it low
 		P2OUT &= 0xF7; //Set PWMR IN2 low (low in forward mode)
-		return; //don't bother on the other cases
-	}
-	else if(pulse_width_r_active > MAX_PULSE_WIDTH)
-	{
-		TA0CCTL2 &= ~CCIE;
 	}
 	else
 	{
-		TA0CCTL2 |= CCIE;
-	}
+		if(pulse_width_r_active > MAX_PULSE_WIDTH)
+		{
+			TA0CCTL2 &= ~CCIE;
+		}
+		else
+		{
+			TA0CCTL2 |= CCIE;
+		}
 
-	// Left
-	if(ldir_active == 1)
-	{
-		P2OUT |= 0x01; //PWML IN1 is P2.0 - (We apply PWM to it)
-		P2OUT &= 0xDF; //PWML IN2 is P2.5 -(We set it low in forward mode)
-	}
-	else
-	{
-		P2OUT |= 0x20; //PWML IN2 is P2.5 - (We apply PWM to it in reverse mode)
-		P2OUT &= 0xFE; //PWML IN1 is P2.0 -(We set it low in reverse mode)
-	}
-
-	// Right
-	if(rdir_active == 1)
-	{
-		P2OUT |= 0x04; //PWMR IN1 is P 2.2
-		P2OUT &= 0xF7; //PWMR IN2 is P2.3 (low in forward mode)
-	}
-	else
-	{
-		P2OUT |= 0x08; //PWMR IN2 is P2.3 (gets PWM in reverse mode)
-		P2OUT &= 0xFB; //PWR  IN1 is P2.2 (set low in reverse)
+		if(rdir_active == 1)
+		{
+			P2OUT |= 0x04; //PWMR IN1 is P 2.2
+			P2OUT &= 0xF7; //PWMR IN2 is P2.3 (low in forward mode)
+		}
+		else
+		{
+			P2OUT |= 0x08; //PWMR IN2 is P2.3 (gets PWM in reverse mode)
+			P2OUT &= 0xFB; //PWR  IN1 is P2.2 (set low in reverse)
+		}
 	}
 
 	TA0CCR0 += FRAMELENGTH; //sets the frame to have FRAMELENGTH cycle length
@@ -129,13 +133,13 @@ __interrupt void PWMCC(void)
 
 void Set_PWM(uint16_t pulse_width, uint8_t flag )
 {
+	// Make sure a valid value is being sent
+	if(pulse_width > FRAMELENGTH) return;
+
 	//LSB of flag determines which motor
 	// Bit 1 of flag will control direction
 	motorsel = flag & 0x01;
 	motordir = (flag & 0x02)>>1;
-
-	// Make sure a valid value is being sent
-	if(pulse_width > FRAMELENGTH) return;
 
 	if(motorsel == 0) {
 		pulse_width_l = pulse_width;
@@ -150,19 +154,21 @@ void Set_PWM(uint16_t pulse_width, uint8_t flag )
 void Test_Motors(void)
 {
 	int8_t step = 1;
-	uint16_t counter = 0;
+	uint16_t counter = 100;
+	uint8_t dir = 2;
 	while(1)
 	{
-		Set_PWM(counter, 2);
-		Set_PWM(counter, 3); //run both "motors" Forward direction
+		Set_PWM(counter, dir);
+		Set_PWM(counter << 1, dir | 1); //run both "motors" Forward direction
 		__delay_cycles(90000);
 		counter += step;
-		if(counter >= FRAMELENGTH) {
+		if(counter >= FRAMELENGTH >> 1) {
 			step *= -1;
-			counter = FRAMELENGTH;
+			counter = FRAMELENGTH >> 1;
 		}
 		else if(counter <= 0){
 			step *= -1;
+			dir ^= 2;
 			counter = 0;
 		}
 	}
