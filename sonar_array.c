@@ -33,7 +33,6 @@ uint16_t toggletime = 0;
 void InitSonarArray() {
 	P1DIR |= 0x41;    				// Set Port 1 Pin 0 & 6 as an output
 	P1DIR &= 0xF7;					// Set P1.3 as an input
-	TA0CTL = 0x02E0; 				// Set Timercounter A To run in continuous mode
 	P1IE = 0x08; 					// Enable interrupt Port1Pin3 for the echo
 	P1IES = 0x08; 					// P1.3 triggers an interrupt on a high to low transition
 

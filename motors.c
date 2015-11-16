@@ -106,7 +106,7 @@ __interrupt void PWMFRAMETICK(void)
 		P2OUT &= 0xFB; //PWR  IN1 is P2.2 (set low in reverse)
 	}
 
-	TA0CCR0 += FRAMELENGTH; //sets the frame to have 1000 cycle length
+	TA0CCR0 += FRAMELENGTH; //sets the frame to have FRAMELENGTH cycle length
 	TA0CCTL0 |= CCIE;
 	//TA0CTL &= 0xFFFE;
 }
@@ -153,8 +153,8 @@ void Test_Motors(void)
 	uint16_t counter = 0;
 	while(1)
 	{
-		Set_PWM(counter, 0);
-		Set_PWM(counter, 1); //run both "motors" Reverse direction
+		Set_PWM(counter, 2);
+		Set_PWM(counter, 3); //run both "motors" Forward direction
 		__delay_cycles(90000);
 		counter += step;
 		if(counter >= FRAMELENGTH) {

@@ -23,6 +23,7 @@ int main(void) {
     BCSCTL1 |= RSEL3 | RSEL2 | RSEL1 | RSEL0;
 
     // Init systems
+    TA0CTL = MC_2 | ID_3 | TASSEL_2; 		// (0x02E0) set Timercounter A To run in continuous mode
     InitSonarArray();
     InitMotors();
     InitComms();
@@ -36,6 +37,8 @@ int main(void) {
     while(1)
 	{
     	__delay_cycles(100);
+    	Set_PWM(0, 0);
+    	Set_PWM(0, 1);
     	Test_Motors();
     	//SonarTick();
     	//Set_PWM(distin[1]/80,0);
