@@ -33,14 +33,15 @@ int main(void) {
     IE2 |= UCA0RXIE | UCA0TXBUF;
 
    // P1DIR = 0x01;
-
+    //Set_PWM(1000, 1);
+   // Set_PWM(2000, 0);
     while(1)
 	{
-    	__delay_cycles(100);
-    	Set_PWM(0, 0);
-    	Set_PWM(0, 1);
-    	Test_Motors();
-    	//SonarTick();
+    	__delay_cycles(1000);
+
+    	//Set_PWM(0, 1);
+    	//Test_Motors();
+    	SonarTick();
     	//Set_PWM(distin[1]/80,0);
     	//TestComms(0x55);
 	}

@@ -8,7 +8,7 @@
 
 // TODO:
 //	* Remove delays in SonarTick function
-//	* Convert global variables to a global struct
+//
 
 // Note:
 //	* If interrupts are ever turned off sonar number will be out of sync
@@ -25,6 +25,7 @@ uint16_t before;
 uint8_t starttrig = 1;
 uint8_t waiting = 0;
 uint16_t toggletime = 0;
+uint16_t after = 0;
 
 // Initilizes the sonar array on Port 1 pin 0,3,6
 // Pin 0 Trigger
@@ -36,11 +37,19 @@ void InitSonarArray() {
 	P1IE = 0x08; 					// Enable interrupt Port1Pin3 for the echo
 	P1IES = 0x08; 					// P1.3 triggers an interrupt on a high to low transition
 
-	P1OUT &= 0xBF; 					// Reset counter
-	__delay_cycles(20); 			// Wait for the reset to kick in
 	P1OUT |= 0x40;					// Set reset False (High)
+	__delay_cycles(20); 			// Wait for the reset to kick in
+	P1OUT &= 0xBF; 					// Reset counter
 }
 
+void ResetSonar(){
+	//This function should have the instructions reversed, but doing so may be incompatible with hardware
+	P1OUT |= 0x40;					// Set reset False (High)
+	__delay_cycles(20); 			// Wait for the reset to kick in
+	P1OUT &= 0xBF; 					// Reset counter
+	starttrig = 1;
+	waiting = 0;
+}
 // Updates the sonar state
 void SonarTick() {
 /*
@@ -49,8 +58,15 @@ void SonarTick() {
 	before = TA0R;
 	__delay_cycles(1000000);
 	*/
+	if((starttrig == 0) && (TA0R - toggletime< 2000))
+	{
+		//If we finished the trigger pulse and the timer wraps around then we can..
+		//Reset the counter
+		ResetSonar();
+	}
 	if(starttrig == 1 && waiting == 0)
 	{
+		__delay_cycles(100000);
 		P1OUT |= 0x01; //set the trigger high
 		waiting = 1;
 		toggletime = TA0R + 20000;
@@ -71,7 +87,7 @@ void SonarTick() {
 __interrupt void Port_1(void)
 {
 
-	uint16_t after = TA0R;						// Set the TA0R to a variable to make subtraction work
+	after = TA0R;						// Set the TA0R to a variable to make subtraction work
 	distin[current_sonar] = after - before;		// Get number of clocks
 
 	++current_sonar;							// Increment sonars

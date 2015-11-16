@@ -15,5 +15,5 @@
 
 void InitSonarArray();
 void SonarTick();
-
+void ResetSonar();
 #endif /* SONAR_ARRAY_H_ */
