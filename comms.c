@@ -12,7 +12,7 @@
 queue TXBuf;
 ringbuf RXBuf;
 uint8_t motor_dir = 0;
-uint32_t motor_speed = 0;
+uint16_t motor_speed = 0;
 
 // Externals
 extern uint16_t distin[];
@@ -21,8 +21,8 @@ extern uint16_t diff1;
 extern uint16_t diff2;
 extern uint32_t encodercount1;
 extern uint32_t encodercount2;
-extern uint8_t g_ldir;
-extern uint8_t g_rdir;
+extern uint8_t g_dir_l;
+extern uint8_t g_dir_r;
 
 // Number of bytes to recieve on a write cycle
 uint8_t num_bytes_in = 0;
@@ -32,7 +32,7 @@ enum addresses {
 	SONAR = 1,			// Read only, four 2 byte values little end first [SONAR_0_L, SONAR_0_H, SONAR_1_L, ...]
 	ENCODERS_SPEED,		// Read only, one one byte return and two 2 byte returns [direction, left, right]  bit 0 of direction is left_dir, bit 1 of direction is right_dir
 	ENCODERS_POSITION,	// Read only, two 4 byte returns [left, right]
-	MOTORS,				// Write only, one one byte value and 2 floating point values [direction, left, right], bit 0 of direction controls left, bit 1 of direction controls right
+	MOTORS,				// Write only, one one byte value and 2 uint16 point values [direction, left, right], bit 0 of direction controls left, bit 1 of direction controls right
 	SET_STATUS,			// Write only, one byte value [status]
 	GET_STATUS,			// Read only, one byte returns [status]
 };
@@ -139,7 +139,7 @@ __interrupt void RXISR() {
 			break;
 		case ENCODERS_SPEED:
 			// Direction
-			if (!QueueInsert(&TXBuf, g_ldir | (g_rdir << 1))) {
+			if (!QueueInsert(&TXBuf, g_dir_l | (g_dir_r << 1))) {
 				// TODO: Handle TXBuf overflow
 			}
 
@@ -194,7 +194,7 @@ __interrupt void RXISR() {
 			IE2 |= UCA0TXIE;
 			break;
 		case MOTORS:
-			num_bytes_in = 9;
+			num_bytes_in = 5;
 			break;
 		case SET_STATUS:
 			num_bytes_in = 1;
@@ -215,27 +215,25 @@ __interrupt void RXISR() {
 	else if (num_bytes_in != 0) {
 		switch(current_addr) {
 		case MOTORS:
-			if(num_bytes_in == 9) {
+			if(num_bytes_in == 5) {
 				motor_dir = value;
 				motor_speed = 0;
 			}
-			else if(num_bytes_in < 9 && num_bytes_in >= 5) {
-				uint8_t shift = 8 * (8 - num_bytes_in);
-				uint32_t temp = value;
+			else if(num_bytes_in == 4 || num_bytes_in == 3) {
+				uint8_t shift = 8 * (4 - num_bytes_in);
+				uint16_t temp = value;
 				motor_speed |= temp << shift;
-				if(num_bytes_in == 5) {
-					float test = *(float *)(&motor_speed);		// Reinterpret_cast
-					Set_PWM(test, (motor_dir & 0x1) << 1);
+				if(num_bytes_in == 3) {
+					Set_PWM(motor_speed, (motor_dir & 0x1) << 1);
 					motor_speed = 0;
 				}
 			}
-			else if(num_bytes_in < 5) {
-				uint8_t shift = 8 * (4 - num_bytes_in);
-				uint32_t temp = value;
+			else if(num_bytes_in < 3) {
+				uint8_t shift = 8 * (2 - num_bytes_in);
+				uint16_t temp = value;
 				motor_speed |= temp << shift;
 				if(num_bytes_in == 1) {
-					float pwm = *(float *)(&motor_speed);		// Reinterpret_cast
-					Set_PWM(pwm, (motor_dir & 0x2) | 0x1);
+					Set_PWM(motor_speed, (motor_dir & 0x2) | 0x1);
 				}
 			}
 			num_bytes_in--;

@@ -17,7 +17,7 @@
 // Function forward declerations
 void InitMotors();
 void MotorTick();
-void Set_PWM(float pwm, uint8_t bit);
+void Set_PWM(uint16_t pusle_width, uint8_t bit);
 void Test_Motors(void);
 
 // Global vars
