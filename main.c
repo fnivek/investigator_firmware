@@ -36,7 +36,8 @@ int main(void) {
     while(1)
 	{
     	__delay_cycles(100);
-    	SonarTick();
+    	Test_Motors();
+    	//SonarTick();
     	//Set_PWM(distin[1]/80,0);
     	//TestComms(0x55);
 	}

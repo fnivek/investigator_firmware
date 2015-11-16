@@ -50,26 +50,37 @@ __interrupt void PWMFRAMETICK(void)
 	ldir_active = g_ldir;
 	rdir_active = g_rdir;
 	timervalue = TAR;
-
-	if(pwml_active != 0 && ldir_active == 1)
+	if(pwml_active < 0.07) //pick a cutoff speed to set to zero
+	{
+		P2OUT &= 0xFE; // PWML IN1 is P2.0 - just set it low
+		P2OUT &= 0xDF; // Set PWML IN2 low for "forward"
+		return; //don't bother checking the other cases
+	}
+	if(pwmr_active < 0.07)
+	{
+		P2OUT &= 0xFB; //PMWR IN1 is P2.2 - just set it low
+		P2OUT &= 0xF7; //Set PWMR IN2 low (low in forward mode)
+		return; //don't bother on the other cases
+	}
+	if(ldir_active == 1)
 	{
 		P2OUT |= 0x01; //PWML IN1 is P2.0 - (We apply PWM to it)
 		P2OUT &= 0xDF; //PWML IN2 is P2.5 -(We set it low in forward mode)
 		TA0CCR1 = timervalue + pwml_active*FRAMELENGTH;  //prepare for an interrupt pwml_active*1000 cycles in the future
 	}
-	else if(pwml_active != 0 && ldir_active == 0)
+	else if(ldir_active == 0)
 	{
 		P2OUT |= 0x20; //PWML IN2 is P2.5 - (We apply PWM to it in reverse mode)
 		P2OUT &= 0xFE; //PWML IN1 is P2.0 -(We set it low in reverse mode)
 		TA0CCR1 = timervalue + pwml_active*FRAMELENGTH;  //prepare for an interrupt pwml_active*1000 cycles in the future
 	}
-	if(pwmr_active != 0 && rdir_active == 1)
+	if(rdir_active == 1)
 	{
 		P2OUT |= 0x04; //PWMR IN1 is P 2.2
 		P2OUT &= 0xF7; //PWMR IN2 is P2.3 (low in forward mode)
 		TA0CCR2 = timervalue + pwmr_active*FRAMELENGTH; //prepare for an interrupt pwmr_active*1000 cycles in the future
 	}
-	if(pwmr_active != 0 && rdir_active == 0)
+	if(rdir_active == 0)
 		{
 		P2OUT |= 0x08; //PWMR IN2 is P2.3 (gets PWM in reverse mode)
 		P2OUT &= 0xFB; //PWR  IN1 is P2.2 (set low in reverse)
@@ -109,6 +120,7 @@ void Set_PWM(float pwm, uint8_t flag )
 	// Bit 1 of flag will control direction
 	 motorsel = flag & 0x01;
 	 motordir = (flag & 0x02)>>1;
+
 	if(pwm >= 0 && pwm<= 1.0 && motorsel==0)
 	{
 		g_pwml = pwm;
@@ -122,20 +134,24 @@ void Set_PWM(float pwm, uint8_t flag )
 }
 void Test_Motors(void)
 {
-	//put this code in a while(1) loop to ramp up motor speed slowly for test purposes
-	float counter = 0.1;
-	Set_PWM(counter,2);
+	//put this code in a  loop to ramp up motor speed slowly for test purposes
+	float step = 0.01;
+	float counter = 0.0;
+	while(1)
+	{
+		Set_PWM(counter,2);
 		Set_PWM(counter,3); //run both "motors" forward direction
 		__delay_cycles(9000000);
-		if(counter<0.99)
-		{
-			counter = counter +0.01;
-
+		counter += step;
+		if(counter >= 1.0) {
+			step *= -1;
+			counter = 1.0;
 		}
-		else
-		{
-			return;
+		else if(counter <= 0.0){
+			step *= -1;
+			counter = 0.0;
 		}
+	}
 }
 
 
