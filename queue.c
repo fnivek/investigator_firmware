@@ -15,11 +15,11 @@ uint8_t QueuePop(queue* q, uint8_t* value) {
 
 	// Pop the value off
 	--q->count;
-	(*value) = q->elements[q->front--];
+	(*value) = q->elements[q->front++];
 
 	// Wrap front if necisary
 	if (q->front >= MAX_TX_BUF_SIZE) {
-		q->front = MAX_TX_BUF_SIZE - 1;
+		q->front = 0;
 	}
 
 	// Success
