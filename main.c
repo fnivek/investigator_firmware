@@ -40,7 +40,7 @@ int main(void) {
 	{
     	//__delay_cycles(100000);
     	//Test_Motors();
-    	//SonarTick();
+    	SonarTick();
     	//Set_PWM(distin[1]/80,0);
     	//TestComms(0x55);
 	}

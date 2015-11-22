@@ -49,6 +49,7 @@ void ResetSonar(){
 	P1OUT &= 0xBF; 					// Reset counter
 	starttrig = 1;
 	waiting = 0;
+	current_sonar = 0;
 }
 // Updates the sonar state
 void SonarTick() {
@@ -62,7 +63,9 @@ void SonarTick() {
 	{
 		//If we finished the trigger pulse and the timer wraps around then we can..
 		//Reset the counter
-		ResetSonar();
+		//ResetSonar();
+		starttrig = 1;
+
 	}
 	if(starttrig == 1 && waiting == 0)
 	{
@@ -70,6 +73,10 @@ void SonarTick() {
 		P1OUT |= 0x01; //set the trigger high
 		waiting = 1;
 		toggletime = TA0R + 20000;
+		++current_sonar;							// Increment sonars
+		if (current_sonar >= kNumSonars) {
+			current_sonar = 0;
+		}
 	}
 	if( (starttrig == 1) && (waiting == 1) && (toggletime - TA0R > 0) &&(toggletime - TA0R < 5000))
 	{
@@ -77,6 +84,7 @@ void SonarTick() {
 		starttrig = 0; //reset the trigger flag
 		before = TA0R;
 		waiting = 0;   //indicates we are not waiting with the trigger high
+
 	}
 
 }
@@ -90,10 +98,11 @@ __interrupt void Port_1(void)
 	after = TA0R;						// Set the TA0R to a variable to make subtraction work
 	distin[current_sonar] = after - before;		// Get number of clocks
 
-	++current_sonar;							// Increment sonars
+/*	++current_sonar;							// Increment sonars
 	if (current_sonar >= kNumSonars) {
 		current_sonar = 0;
 	}
+*/
 
 	P1IFG = 0x00;								// Clear the interrupt flag
 	starttrig = 1; 								//Set the flag for the trigger
