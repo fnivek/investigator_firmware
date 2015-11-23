@@ -55,8 +55,8 @@ __interrupt void PWMFRAMETICK(void)
 	// Left
 	if(pulse_width_l_active < MIN_PULSE_WIDTH) //pick a cutoff speed to set to zero
 	{
-		P2OUT &= 0xFE; // PWML IN1 is P2.0 - just set it low
-		P2OUT &= 0xDF; // Set PWML IN2 low for "forward"
+		P2OUT &= 0xFB; //PMWR IN1 is P2.2 - just set it low
+		P2OUT &= 0xF7; //Set PWMR IN2 low (low in forward mode)
 	}
 	else
 	{
@@ -71,21 +71,21 @@ __interrupt void PWMFRAMETICK(void)
 
 		if(ldir_active == 1)
 		{
-			P2OUT |= 0x01; //PWML IN1 is P2.0 - (We apply PWM to it)
-			P2OUT &= 0xDF; //PWML IN2 is P2.5 -(We set it low in forward mode)
+			P2OUT |= 0x08; //PWMR IN2 is P2.3 (gets PWM in forward mode)
+			P2OUT &= 0xFB; //PWR  IN1 is P2.2 (set low in forward)
 		}
 		else
 		{
-			P2OUT |= 0x20; //PWML IN2 is P2.5 - (We apply PWM to it in reverse mode)
-			P2OUT &= 0xFE; //PWML IN1 is P2.0 -(We set it low in reverse mode)
+			P2OUT |= 0x04; //PWMR IN1 is P 2.2
+			P2OUT &= 0xF7; //PWMR IN2 is P2.3 (low in reverse mode)
 		}
 	}
 
 	// Right
 	if(pulse_width_r_active < MIN_PULSE_WIDTH)
 	{
-		P2OUT &= 0xFB; //PMWR IN1 is P2.2 - just set it low
-		P2OUT &= 0xF7; //Set PWMR IN2 low (low in forward mode)
+		P2OUT &= 0xFE; // PWML IN1 is P2.0 - just set it low
+		P2OUT &= 0xDF; // Set PWML IN2 low for "forward"
 	}
 	else
 	{
@@ -100,13 +100,13 @@ __interrupt void PWMFRAMETICK(void)
 
 		if(rdir_active == 1)
 		{
-			P2OUT |= 0x04; //PWMR IN1 is P 2.2
-			P2OUT &= 0xF7; //PWMR IN2 is P2.3 (low in forward mode)
+			P2OUT |= 0x01; //PWML IN1 is P2.0 - (We apply PWM to it)
+			P2OUT &= 0xDF; //PWML IN2 is P2.5 -(We set it low in forward mode)
 		}
 		else
 		{
-			P2OUT |= 0x08; //PWMR IN2 is P2.3 (gets PWM in reverse mode)
-			P2OUT &= 0xFB; //PWR  IN1 is P2.2 (set low in reverse)
+			P2OUT |= 0x20; //PWML IN2 is P2.5 - (We apply PWM to it in reverse mode)
+			P2OUT &= 0xFE; //PWML IN1 is P2.0 -(We set it low in reverse mode)
 		}
 	}
 
@@ -122,12 +122,12 @@ __interrupt void PWMCC(void)
 	uint16_t timerintcode = TA0IV;
 	if((timerintcode & 0x02) == 0x02)//TACCR1 controls the "left"
 	{
-		P2OUT &= 0xDE;//Left forward means PWM is bit 2.0 which we switch off here
+		P2OUT &= 0xF3;//Right forward -> switch off IN1 -> P2.2
 	}
 
 	if((timerintcode & 0x04) == 0x04)//TACCR2 controls the "right"
 	{
-		P2OUT &= 0xF3;//Right forward -> switch off IN1 -> P2.2
+		P2OUT &= 0xDE;//Left forward means PWM is bit 2.0 which we switch off here
 	}
 }
 
