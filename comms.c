@@ -240,6 +240,7 @@ __interrupt void RXISR() {
 			break;
 		case SET_STATUS:
 			// TODO: Add status system
+			P3OUT = value;
 			num_bytes_in--;
 			break;
 		default:
