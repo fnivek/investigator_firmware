@@ -38,11 +38,14 @@ int main(void) {
 
     while(1)
 	{
-    	//__delay_cycles(100000);
-    	//Test_Motors();
+
     	SonarTick();
-    	//Set_PWM(distin[1]/80,0);
-    	//TestComms(0x55);
+    	if((lastcom>TA0R) && (lastcom - TA0R < 500))
+		{
+			P3OUT = 0x07;
+			Set_PWM(0, 0);
+			Set_PWM(0, 1);
+		}
 	}
 	return 0;
 }

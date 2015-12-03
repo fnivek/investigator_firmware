@@ -10,7 +10,7 @@
 
 // Global vars
 queue TXBuf;
-ringbuf RXBuf;
+//ringbuf RXBuf;
 uint8_t motor_dir = 0;
 uint16_t motor_speed = 0;
 
@@ -52,6 +52,7 @@ void InitComms(void) {
 	P1SEL2 |= 0x36;
 	P1DIR |= 0x14;			// P1.2, P1.4, P1.5 In
 	P1DIR &= ~0x2;			// P1.1 Out
+	P3DIR = 0xFF;           // Port 3 is all outputs
 
 	// Set slave mode active low cs
 	// UCCKPH = 0, UCCKPL = 0, works with odroid in mode 0b01
@@ -107,7 +108,8 @@ __interrupt void TXISR() {
 __interrupt void RXISR() {
 	// Grab value
 	uint8_t value = UCA0RXBUF;
-	RingbufPush(&RXBuf, value);
+	lastcom = TA0R;
+	//RingbufPush(&RXBuf, value);
 	//Transmit(value);
 
 	// Check if this is a new read or write by seeing if we are waiting

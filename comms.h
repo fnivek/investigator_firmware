@@ -20,4 +20,6 @@ void InitComms(void);
 uint8_t TestComms(uint8_t thing);
 void Transmit(uint8_t out);
 
+uint16_t lastcom;
+
 #endif /* COMMS_H_ */
